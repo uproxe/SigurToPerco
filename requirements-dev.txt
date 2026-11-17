@@ -1,0 +1,5 @@
+# Для разработки, тестов и сборки
+-r requirements.txt
+pytest
+pyinstaller>=6.10
+pillow             # только для scripts/make_icons.py

@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Sigur → PERCo
+Name[ru]=Sigur → PERCo
+GenericName=Pass number converter
+GenericName[ru]=Конвертер пропусков
+Comment=Convert Sigur pass numbers and employee exports to PERCo format
+Comment[ru]=Пересчёт номеров пропусков и выгрузки сотрудников Sigur для импорта в PERCo
+Exec=@EXEC@ %f
+Icon=@ICON@
+Terminal=false
+Categories=Office;Utility;
+Keywords=sigur;perco;skud;скуд;пропуск;
+MimeType=application/vnd.ms-excel;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;
+StartupWMClass=SigurPerco
+StartupNotify=true

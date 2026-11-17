@@ -1,0 +1,12 @@
+Package: @PACKAGE@
+Version: @VERSION@
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: @MAINTAINER@
+Installed-Size: @SIZE@
+Depends: libc6, libx11-6, libxft2, libxss1, libfontconfig1
+Description: Sigur to PERCo pass number and employee export converter
+ Converts Sigur (W58 HEX) access card numbers to PERCo "series/number"
+ format and builds a PERCo-Web employee import table from a Sigur
+ employee export (.xls/.xlsx).

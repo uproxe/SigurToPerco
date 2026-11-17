@@ -1,0 +1,174 @@
+# Сборка под Windows, Linux и macOS.
+#
+#  - каждый push в main и ручной запуск (Actions -> Build -> Run workflow):
+#      тесты + сборки; готовые файлы лежат в «Artifacts» на странице запуска;
+#  - push тега v* (например v3.1.0): то же самое + GitHub Release с файлами;
+#  - pull request: только тесты.
+
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ------------------------------------------------------------------ тесты
+  test:
+    name: Тесты
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt pytest
+      - run: python -m pytest -q
+
+  # ------------------------------------------------------------------ Windows
+  windows:
+    name: Windows${{ matrix.suffix && format(' ({0})', matrix.suffix) || '' }}
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    # сборка для Windows 7 - бонус: если она вдруг сломается, релиз всё равно выйдет
+    continue-on-error: ${{ matrix.optional }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: "3.12"
+            pyinstaller: "pyinstaller>=6.10"
+            suffix: ""
+            optional: false
+          - python: "3.8"               # последний Python, который работает на Windows 7
+            pyinstaller: "pyinstaller==5.13.2"
+            suffix: "win7"
+            optional: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Зависимости
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt "${{ matrix.pyinstaller }}"
+      - name: Проверка tkinter
+        run: python -c "import tkinter; print('Tcl/Tk', tkinter.Tcl().eval('info patchlevel'))"
+      - name: Сборка
+        shell: bash
+        run: |
+          ARGS=()
+          [[ "$GITHUB_REF" == refs/tags/v* ]] && ARGS+=(--version "${GITHUB_REF_NAME#v}")
+          [[ -n "${{ matrix.suffix }}" ]] && ARGS+=(--suffix "${{ matrix.suffix }}")
+          python scripts/build.py "${ARGS[@]}"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: SigurPerco-windows${{ matrix.suffix && format('-{0}', matrix.suffix) || '' }}
+          path: release/*
+          if-no-files-found: error
+
+  # ------------------------------------------------------------------ Linux (.deb)
+  # Собираем внутри Ubuntu 22.04: программа будет работать и на ней, и на всём,
+  # что новее (Ubuntu 22.04+, Debian 12+, Mint 21+, Astra 1.8 и т.п.).
+  linux:
+    name: Linux (.deb)
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    container: ubuntu:22.04
+    steps:
+      - name: Системные пакеты
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            python3 python3-venv python3-pip python3-tk tk8.6 binutils dpkg-dev git ca-certificates
+      - uses: actions/checkout@v5
+      - name: Зависимости
+        run: |
+          python3 -m venv /opt/venv
+          /opt/venv/bin/pip install --upgrade pip
+          /opt/venv/bin/pip install -r requirements.txt "pyinstaller>=6.10"
+      - name: Проверка tkinter
+        run: /opt/venv/bin/python -c "import tkinter; print('Tcl/Tk', tkinter.Tcl().eval('info patchlevel'))"
+      - name: Сборка
+        shell: bash
+        run: |
+          ARGS=()
+          [[ "$GITHUB_REF" == refs/tags/v* ]] && ARGS+=(--version "${GITHUB_REF_NAME#v}")
+          /opt/venv/bin/python scripts/build.py "${ARGS[@]}"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: SigurPerco-linux
+          path: release/*
+          if-no-files-found: error
+
+  # ------------------------------------------------------------------ macOS (.dmg)
+  macos:
+    name: macOS (${{ matrix.arch }})
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15            # Apple Silicon (M1/M2/M3/M4)
+            arch: arm64
+          - os: macos-15-intel      # Intel
+            arch: intel
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Зависимости
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt "pyinstaller>=6.10"
+      - name: Проверка tkinter
+        run: python -c "import tkinter; print('Tcl/Tk', tkinter.Tcl().eval('info patchlevel'))"
+      - name: Сборка
+        run: |
+          ARGS=()
+          [[ "$GITHUB_REF" == refs/tags/v* ]] && ARGS+=(--version "${GITHUB_REF_NAME#v}")
+          python scripts/build.py "${ARGS[@]}"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: SigurPerco-macos-${{ matrix.arch }}
+          path: release/*
+          if-no-files-found: error
+
+  # ------------------------------------------------------------------ релиз
+  release:
+    name: GitHub Release
+    needs: [windows, linux, macos]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v7
+        with:
+          path: release
+          pattern: SigurPerco-*
+          merge-multiple: true
+      - run: ls -la release
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          body_path: .github/release-notes.md
+          generate_release_notes: true
