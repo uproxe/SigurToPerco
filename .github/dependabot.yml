@@ -11,10 +11,13 @@ updates:
       actions:
         patterns: ["*"]
 
+  # Только если новая версия не попадает в текущий диапазон (например, закреплённый ruff).
+  # Нижние границы не поднимаются: сборка для Windows 7 (Python 3.8) сама подберёт совместимые версии.
   - package-ecosystem: pip
     directory: /
     schedule:
       interval: monthly
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: chore
     groups:
