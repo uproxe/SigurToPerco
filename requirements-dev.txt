@@ -1,7 +1,7 @@
 # Для разработки, тестов и сборки: pip install -r requirements-dev.txt
 -r requirements.txt
 pytest>=8
-ruff>=0.16,<0.17
+ruff>=0.16,<0.18
 pyinstaller>=6.10
 # для scripts/make_icons.py и scripts/screenshots.py
 pillow>=10
