@@ -1,0 +1,52 @@
+name: Ошибка
+description: Программа работает не так, как ожидалось
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Не прикладывайте настоящие выгрузки и файлы для PERCo — в них персональные данные сотрудников.**
+        Если ошибка связана с файлом, опишите, что в нём (колонки, формат дат, пример номера пропуска),
+        или воспроизведите на `examples/sigur_export_sample.xlsx`.
+  - type: input
+    id: version
+    attributes:
+      label: Версия программы
+      description: Показана в правом верхнем углу окна, например v0.3.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Система
+      options:
+        - Windows 10/11
+        - Windows 7
+        - Linux (.deb)
+        - Linux (.tar.gz)
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - запуск из исходников
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Что делали
+      placeholder: |
+        1. Открыл вкладку «Выгрузка из Sigur»
+        2. Перетащил файл …
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Что получилось и что ожидали
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Текст ошибки
+      description: Сообщение из окна или файл SigurPerco_error.log (лежит рядом с программой или в домашней папке)
+      render: text
