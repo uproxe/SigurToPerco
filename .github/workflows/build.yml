@@ -32,8 +32,8 @@ jobs:
     name: Тесты
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: python -m pip install -r requirements-dev.txt
@@ -65,8 +65,8 @@ jobs:
             os: windows-latest
             optional: true          # снимок экрана на сборочной машине Windows бывает чёрным
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Виртуальный экран (Linux)
@@ -81,7 +81,7 @@ jobs:
       - name: Запуск окна и скриншоты (Windows)
         if: runner.os == 'Windows'
         run: python scripts/screenshots.py screenshots
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ui-screenshots-${{ matrix.name }}
@@ -109,8 +109,8 @@ jobs:
             suffix: "win7"
             optional: true
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - name: Зависимости
@@ -126,7 +126,7 @@ jobs:
           [[ "$GITHUB_REF" == refs/tags/v* ]] && ARGS+=(--version "${GITHUB_REF_NAME#v}")
           [[ -n "${{ matrix.suffix }}" ]] && ARGS+=(--suffix "${{ matrix.suffix }}")
           python scripts/build.py "${ARGS[@]}"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: SigurPerco-windows${{ matrix.suffix && format('-{0}', matrix.suffix) || '' }}
           path: release/*
@@ -152,7 +152,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             python3 python3-venv python3-pip python3-dev python3-tk tk8.6 \
             binutils dpkg-dev git ca-certificates
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Зависимости
         run: |
           python3 -m venv /opt/venv
@@ -166,7 +166,7 @@ jobs:
           ARGS=()
           [[ "$GITHUB_REF" == refs/tags/v* ]] && ARGS+=(--version "${GITHUB_REF_NAME#v}")
           /opt/venv/bin/python scripts/build.py "${ARGS[@]}"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: SigurPerco-linux
           path: release/*
@@ -187,8 +187,8 @@ jobs:
           - os: macos-15-intel      # Intel
             arch: intel
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Зависимости
@@ -202,7 +202,7 @@ jobs:
           ARGS=()
           [[ "$GITHUB_REF" == refs/tags/v* ]] && ARGS+=(--version "${GITHUB_REF_NAME#v}")
           python scripts/build.py "${ARGS[@]}"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: SigurPerco-macos-${{ matrix.arch }}
           path: release/*
@@ -217,19 +217,19 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v7
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           path: release
           pattern: SigurPerco-*
           merge-multiple: true
       - run: ls -la release
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Описание релиза из CHANGELOG
         run: python scripts/release_notes.py "${GITHUB_REF_NAME#v}" > release-body.md
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           name: Sigur → PERCo ${{ github.ref_name }}
           body_path: release-body.md
