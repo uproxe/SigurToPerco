@@ -85,7 +85,8 @@ def draw(S, small=False):
 def render(size):
     """Рисуем крупно и уменьшаем - так края получаются гладкими."""
     big = draw(min(size * 4, 2048), small=size <= 24)
-    return big.resize((size, size), Image.LANCZOS)
+    lanczos = getattr(Image, "Resampling", Image).LANCZOS     # Pillow 9.1+ и старше
+    return big.resize((size, size), lanczos)
 
 
 def main():

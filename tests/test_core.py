@@ -103,13 +103,15 @@ def test_output_file_layout(sample_xlsx, tmp_path):
     out = str(tmp_path / "out.xlsx")
     core.convert_file(sample_xlsx, out)
     ws = load_workbook(out).active
+    assert ws is not None
     rows = list(ws.iter_rows(values_only=True))
     assert list(rows[0]) == core.PERCO_HEADERS          # шапка - в первой строке
     assert rows[1][0] == "Иванов"                       # данные - сразу со второй
     assert isinstance(rows[1][4], str)                  # табельный - текст
     assert rows[1][17] == 0 and isinstance(rows[1][17], int)
     head = ws["A1"]
-    assert head.font.b and head.fill.fgColor.rgb.endswith("BAD9FF")
+    assert head.font.b
+    assert str(head.fill.fgColor.rgb).endswith("BAD9FF")
 
 
 def test_options(sample_xlsx, tmp_path):

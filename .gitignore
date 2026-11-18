@@ -10,6 +10,7 @@ build/
 dist/
 release/
 *.spec
+screenshots/
 
 # Результаты конвертации и настоящие выгрузки - не для репозитория!
 userPERCO*.xlsx

@@ -2,4 +2,4 @@
 -r requirements.txt
 pytest
 pyinstaller>=6.10
-pillow             # только для scripts/make_icons.py
+pillow             # для scripts/make_icons.py и scripts/screenshots.py

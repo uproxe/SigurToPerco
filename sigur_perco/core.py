@@ -474,7 +474,7 @@ def write_perco_table(records, path):
     try:
         wb.close()
     except FileCreateError as e:
-        raise PermissionError(str(e))
+        raise PermissionError(str(e)) from e
 
 
 def default_output_path(src):
@@ -501,7 +501,8 @@ def convert_file(src, dst=None, until=UNLIMITED_UNTIL, upper=UPPERCASE_NAMES):
     dst = dst or default_output_path(src)
     try:
         write_perco_table(res.records, dst)
-    except PermissionError:
-        raise PermissionError("Не удалось сохранить «%s». Если этот файл открыт в Excel - закройте его и повторите." % dst)
+    except PermissionError as e:
+        raise PermissionError("Не удалось сохранить «%s». Если этот файл открыт в Excel - закройте его и повторите."
+                              % dst) from e
     res.out_path = dst
     return res

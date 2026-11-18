@@ -2,7 +2,7 @@
 """Сборка программы под текущую систему.
 
     python scripts/build.py                     # версия берётся из sigur_perco/__init__.py
-    python scripts/build.py --version 3.1.0     # заодно прописать версию в программу
+    python scripts/build.py --version 0.4.0     # заодно прописать версию в программу
     python scripts/build.py --suffix win7       # добавить метку к имени файла
 
 Нужны: pip install -r requirements.txt pyinstaller
@@ -39,6 +39,13 @@ DESCRIPTION = "Sigur -> PERCo: пересчёт номеров пропуско�
 
 IS_WIN = sys.platform == "win32"
 IS_MAC = sys.platform == "darwin"
+
+# Консоль сборочной машины Windows работает в cp1252 и падает на русском тексте.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 
 def log(msg):
@@ -142,7 +149,7 @@ def package_windows(version, suffix):
 
 
 def _deb_version(version):
-    # 3.1.0-beta1 -> 3.1.0~beta1 (так dpkg правильно сравнивает версии)
+    # 0.4.0-beta1 -> 0.4.0~beta1 (так dpkg правильно сравнивает версии)
     return version.replace("-", "~")
 
 
