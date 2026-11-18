@@ -137,9 +137,24 @@ def run_gui(initial_file=None, on_ready=None):
         return int(round(px * scale))
 
     sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
+    # невысокий экран (ноутбук 1366x768 и т.п.): плотнее по вертикали и окно на весь экран
+    compact = sh < 900 * scale
+
+    def RV(px):
+        """Вертикальный отступ: в компактном режиме меньше."""
+        return int(round(px * scale * (0.55 if compact else 1.0)))
+
     W, H = min(R(1100), sw - 40), min(R(760), sh - 80)
     root.geometry("%dx%d+%d+%d" % (W, H, max(0, (sw - W) // 2), max(0, (sh - H) // 3)))
-    root.minsize(min(R(920), sw - 40), min(R(640), sh - 80))
+    root.minsize(min(R(920), sw - 40), min(R(600), sh - 80))
+    if compact:
+        try:
+            if IS_WIN:
+                root.state("zoomed")
+            elif IS_LINUX:
+                root.attributes("-zoomed", True)
+        except tk.TclError:
+            pass
 
     # --- шрифты под каждую систему
     families = set(tkfont.families(root))
@@ -176,7 +191,7 @@ def run_gui(initial_file=None, on_ready=None):
         "title": fnt(15, True), "subtitle": fnt(9), "tab": fnt(10, True), "h": fnt(12, True),
         "body": fnt(10), "small": fnt(9), "caption": fnt(8, True), "btn": fnt(10, True),
         "btn_big": fnt(11, True), "input": fnt(18, mono=True), "result": fnt(34, True),
-        "mono": fnt(10, mono=True), "stat": fnt(20, True), "icon": fnt(20, True),
+        "mono": fnt(10, mono=True), "stat": fnt(16 if compact else 20, True), "icon": fnt(20, True),
     }
 
     # --- таблица предпросмотра: плоский стиль без рамок и «объёмных» заголовков
@@ -226,15 +241,26 @@ def run_gui(initial_file=None, on_ready=None):
         return ScrollBar(master, orient, command, colors=(C["scroll"], C["scroll_hover"]),
                          thickness=R(10), bg=bg)
 
+    def auto_wrap(label, justify="left"):
+        """Длинная подпись переносится по ширине места, а не обрезается по краям."""
+        label.configure(wraplength=R(240), justify=justify)
+
+        def fit(e):
+            width = max(R(120), e.width - R(4))
+            if int(label.cget("wraplength")) != width:
+                label.configure(wraplength=width)
+        label.bind("<Configure>", fit, add="+")
+        return label
+
     def card(master, title=None, hint=None):
         outer = RoundedFrame(master, P, C["card"], border=C["border"], radius=R(12))
         inner = tk.Frame(outer, bg=C["card"])
-        inner.pack(fill="both", expand=True, padx=R(18), pady=R(16))
+        inner.pack(fill="both", expand=True, padx=R(18), pady=RV(16))
         if title:
             tk.Label(inner, text=title, font=F["h"], bg=C["card"], fg=C["text"]).pack(anchor="w")
         if hint:
-            tk.Label(inner, text=hint, font=F["small"], bg=C["card"], fg=C["muted"],
-                     justify="left").pack(anchor="w", pady=(R(2), 0))
+            auto_wrap(tk.Label(inner, text=hint, font=F["small"], bg=C["card"], fg=C["muted"],
+                               anchor="w")).pack(fill="x", pady=(RV(2), 0))
         return outer, inner
 
     def focus_border(box, widget, error_state=None):
@@ -334,7 +360,7 @@ def run_gui(initial_file=None, on_ready=None):
     header = tk.Frame(root, bg=C["header"])
     header.pack(fill="x")
     hin = tk.Frame(header, bg=C["header"])
-    hin.pack(fill="x", padx=R(22), pady=(R(14), 0))
+    hin.pack(fill="x", padx=R(22), pady=(RV(14), 0))
 
     logo = None
     for name in (("64.png", "48.png") if scale >= 1.4 else ("48.png",)):
@@ -356,13 +382,13 @@ def run_gui(initial_file=None, on_ready=None):
              fg=C["header_muted"]).pack(side="right", anchor="n")
 
     tabs_bar = tk.Frame(header, bg=C["header"])
-    tabs_bar.pack(fill="x", padx=R(14), pady=(R(12), 0))
+    tabs_bar.pack(fill="x", padx=R(14), pady=(RV(12), 0))
 
     body = tk.Frame(root, bg=C["bg"])
-    body.pack(fill="both", expand=True, padx=R(18), pady=(R(16), 0))
+    body.pack(fill="both", expand=True, padx=R(18), pady=(RV(16), 0))
 
     status = tk.Frame(root, bg=C["bg"])
-    status.pack(fill="x", padx=R(20), pady=(R(8), R(10)))
+    status.pack(fill="x", padx=R(20), pady=(RV(8), RV(10)))
     status_lbl = tk.Label(status, text="", font=F["small"], bg=C["bg"], fg=C["muted"], anchor="w")
     status_lbl.pack(side="left", fill="x", expand=True)
     hint = ("⌘V — вставить и сразу скопировать результат  •  Enter — скопировать ещё раз" if IS_MAC else
@@ -427,22 +453,22 @@ def run_gui(initial_file=None, on_ready=None):
     card_var = tk.StringVar(master=root)
     card_error = {"on": False}
     card_box, card_entry, card_focus = field(left, card_var, font=F["input"], pady=9, error_state=card_error)
-    card_box.pack(fill="x", pady=(R(14), 0))
+    card_box.pack(fill="x", pady=(RV(14), 0))
 
     res_box = RoundedFrame(left, P, C["accent_soft"], radius=R(10))
-    res_box.pack(fill="x", pady=(R(12), 0))
+    res_box.pack(fill="x", pady=(RV(12), 0))
     res_cap = tk.Label(res_box, text="НОМЕР ДЛЯ PERCO", font=F["caption"], bg=C["accent_soft"], fg=C["accent"])
-    res_cap.pack(anchor="w", padx=R(16), pady=(R(12), 0))
+    res_cap.pack(anchor="w", padx=R(16), pady=(RV(12), 0))
     res_lbl = tk.Label(res_box, text="—", font=F["result"], bg=C["accent_soft"], fg=C["faint"], cursor="hand2")
     res_lbl.pack(anchor="w", padx=R(14))
     res_detail = tk.Label(res_box, text=" ", font=F["mono"], bg=C["accent_soft"], fg=C["muted"], justify="left")
-    res_detail.pack(anchor="w", padx=R(16), pady=(0, R(12)))
+    res_detail.pack(anchor="w", padx=R(16), pady=(0, RV(12)))
 
     card_btns = tk.Frame(left, bg=C["card"])
-    card_btns.pack(fill="x", pady=(R(12), 0))
+    card_btns.pack(fill="x", pady=(RV(12), 0))
 
     hist_head = tk.Frame(left, bg=C["card"])
-    hist_head.pack(fill="x", pady=(R(18), R(6)))
+    hist_head.pack(fill="x", pady=(RV(18), RV(6)))
     tk.Label(hist_head, text="История", font=fnt(10, True), bg=C["card"], fg=C["text"]).pack(side="left")
     tk.Label(hist_head, text="двойной щелчок — скопировать", font=F["small"], bg=C["card"],
              fg=C["faint"]).pack(side="left", padx=R(8))
@@ -454,8 +480,8 @@ def run_gui(initial_file=None, on_ready=None):
                       highlightthickness=0)
     hist_sb = scrollbar(hist_box, "vertical", hist.yview, C["field"])
     hist.configure(yscrollcommand=hist_sb.set)
-    hist_sb.pack(side="right", fill="y", padx=(0, R(3)), pady=R(5))
-    hist.pack(side="left", fill="both", expand=True, padx=(R(8), 0), pady=R(5))
+    hist_sb.pack(side="right", fill="y", padx=(0, R(3)), pady=RV(5))
+    hist.pack(side="left", fill="both", expand=True, padx=(R(8), 0), pady=RV(5))
     history = []                        # [(ввод, результат)]
 
     current = {"out": "", "inp": ""}
@@ -573,16 +599,20 @@ def run_gui(initial_file=None, on_ready=None):
     right_o.grid(row=0, column=1, sticky="nsew", padx=(R(8), 0))
 
     tk.Label(right, text="Номера из Sigur (или PERCo)", font=F["small"], bg=C["card"],
-             fg=C["muted"]).pack(anchor="w", pady=(R(12), R(4)))
+             fg=C["muted"]).pack(anchor="w", pady=(RV(12), RV(4)))
     batch_in_box, batch_in = textbox(right, height=7)
     batch_in_box.pack(fill="both", expand=True)
 
     bopts = tk.Frame(right, bg=C["card"])
-    bopts.pack(fill="x", pady=(R(10), 0))
+    bopts.pack(fill="x", pady=(RV(10), 0))
     only_res = tk.BooleanVar(master=root, value=False)
 
-    tk.Label(right, text="Результат", font=F["small"], bg=C["card"], fg=C["muted"]).pack(anchor="w", pady=(R(10), R(4)))
+    out_head = tk.Frame(right, bg=C["card"])
+    out_head.pack(fill="x", pady=(RV(12), RV(4)))
+    tk.Label(out_head, text="Результат", font=F["small"], bg=C["card"], fg=C["muted"]).pack(side="left")
+    toggle(out_head, "только номера, без исходных", only_res, F["small"]).pack(side="right")
     batch_out_box, batch_out = textbox(right, height=7, readonly=True)
+    batch_out.configure(wrap="word")
     batch_out_box.pack(fill="both", expand=True)
     batch_out.tag_configure("err", foreground=C["err"])
     batch_out.tag_configure("dim", foreground=C["faint"])
@@ -632,7 +662,6 @@ def run_gui(initial_file=None, on_ready=None):
     button(bopts, "Конвертировать", convert_batch, kind="primary").pack(side="left")
     button(bopts, "Копировать", copy_batch).pack(side="left", padx=R(8))
     button(bopts, "Очистить", clear_batch, kind="ghost").pack(side="left")
-    toggle(bopts, "только результат", only_res, F["small"]).pack(side="right")
 
     # ------------------------------------------------------------------
     #  Вкладка «Выгрузка из Sigur»
@@ -657,33 +686,32 @@ def run_gui(initial_file=None, on_ready=None):
 
     drop = RoundedFrame(f1, P, C["accent_soft"], border=C["accent_line"], radius=R(10))
     drop.configure(cursor="hand2")
-    drop.pack(fill="both", expand=True, pady=(R(12), 0))
+    drop.pack(fill="both", expand=True, pady=(RV(12), 0))
     drop_icon = tk.Label(drop, text="⇩", font=F["icon"], bg=C["accent_soft"], fg=C["accent"], cursor="hand2")
-    drop_icon.pack(pady=(R(14), 0))
+    drop_icon.pack(pady=(RV(14), 0))
     drop_text = "Перетащите сюда файл выгрузки" if dnd else "Нажмите, чтобы выбрать файл выгрузки"
     drop_main = tk.Label(drop, text=drop_text, font=F["btn_big"], bg=C["accent_soft"], fg=C["text"], cursor="hand2")
     drop_main.pack(padx=R(16))
     drop_sub = tk.Label(drop, text=("или нажмите, чтобы выбрать  •  .xls / .xlsx" if dnd else ".xls / .xlsx"),
-                        font=F["small"], bg=C["accent_soft"], fg=C["muted"], cursor="hand2",
-                        wraplength=R(520))
-    drop_sub.pack(padx=R(16), pady=(R(2), R(14)))
+                        font=F["small"], bg=C["accent_soft"], fg=C["muted"], cursor="hand2")
+    auto_wrap(drop_sub, justify="center").pack(fill="x", padx=R(16), pady=(RV(2), RV(14)))
 
     f2_o, f2 = card(top, "2. Параметры")
     f2_o.grid(row=0, column=1, sticky="nsew", padx=(R(8), 0))
     tk.Label(f2, text="«Действует до» для пропусков без срока", font=F["small"], bg=C["card"],
-             fg=C["muted"]).pack(anchor="w", pady=(R(12), R(4)))
+             fg=C["muted"]).pack(anchor="w", pady=(RV(12), RV(4)))
     until_box, _until_entry, _ = field(f2, until_var, font=F["mono"])
     until_box.pack(fill="x")
-    toggle(f2, "ФИО заглавными буквами", upper_var, F["body"]).pack(anchor="w", pady=(R(12), 0))
+    toggle(f2, "ФИО заглавными буквами", upper_var, F["body"]).pack(anchor="w", pady=(RV(12), 0))
     tk.Label(f2, text="Сохранить как", font=F["small"], bg=C["card"],
-             fg=C["muted"]).pack(anchor="w", pady=(R(12), R(4)))
+             fg=C["muted"]).pack(anchor="w", pady=(RV(12), RV(4)))
     dst_row = tk.Frame(f2, bg=C["card"])
     dst_row.pack(fill="x")
     dst_box, _dst_entry, _ = field(dst_row, dst_var, font=F["small"])
     dst_box.pack(side="left", fill="x", expand=True)
 
     action = tk.Frame(pg_file, bg=C["bg"])
-    action.pack(fill="x", pady=R(12))
+    action.pack(fill="x", pady=RV(12))
     run_btn = button(action, "Конвертировать в PERCo  →", kind="primary", big=True)
     run_btn.pack(side="left")
     open_btn = button(action, "Открыть файл")
@@ -706,28 +734,35 @@ def run_gui(initial_file=None, on_ready=None):
         tile = RoundedFrame(stats, P, C["sec"], radius=R(10))
         tile.grid(row=0, column=i, sticky="ew", padx=(0 if i == 0 else R(8), 0))
         v = tk.Label(tile, text="—", font=F["stat"], bg=C["sec"], fg=C["text"])
-        v.pack(anchor="w", padx=R(14), pady=(R(8), 0))
+        v.pack(anchor="w", padx=R(14), pady=(RV(8), 0))
         c = tk.Label(tile, text=cap, font=F["small"], bg=C["sec"], fg=C["muted"])
-        c.pack(anchor="w", padx=R(14), pady=(0, R(10)))
+        c.pack(anchor="w", padx=R(14), pady=(0, RV(10)))
         stat_tiles[key] = (tile, v, c)
 
     seg = tk.Frame(r, bg=C["card"])
-    seg.pack(fill="x", pady=(R(14), R(8)))
+    seg.pack(fill="x", pady=(RV(14), RV(8)))
     view_area = tk.Frame(r, bg=C["card"])
     view_area.pack(fill="both", expand=True)
 
     # предпросмотр (индекс колонки в таблице PERCo, заголовок, ширина)
     prev_box = RoundedFrame(view_area, P, C["card"], border=C["border"], radius=R(8))
     prev_in = tk.Frame(prev_box, bg=C["card"])
-    prev_in.pack(fill="both", expand=True, padx=R(4), pady=R(4))
-    prev_cols = [(0, "Фамилия", 120), (1, "Имя", 100), (2, "Отчество", 120), (4, "Таб. №", 70),
-                 (6, "Подразделение", 220), (10, "Карта №", 90), (12, "Действует с", 140),
-                 (13, "Действует до", 140), (3, "Блок.", 50)]
+    prev_in.pack(fill="both", expand=True, padx=R(4), pady=RV(4))
+    body_font = tkfont.Font(root=root, font=F["body"])
+
+    def col_w(sample):
+        return body_font.measure(sample) + R(24)
+
+    prev_cols = [(0, "Фамилия", col_w("Константинопольская")), (1, "Имя", col_w("Александра")),
+                 (2, "Отчество", col_w("Александровна")), (4, "Таб. №", col_w("Т-00000")),
+                 (6, "Подразделение", col_w("Подразделение №00")), (10, "Карта №", col_w("255/65535")),
+                 (12, "Действует с", col_w("0000-00-00 00:00:00")),
+                 (13, "Действует до", col_w("0000-00-00 00:00:00")), (3, "Блок.", col_w("Блок."))]
     tree = ttk.Treeview(prev_in, columns=[str(i) for i in range(len(prev_cols))], show="headings",
                         style="Flat.Treeview")
     for i, (_idx, name, w) in enumerate(prev_cols):
         tree.heading(str(i), text=name, anchor="w")
-        tree.column(str(i), width=R(w), minwidth=R(40), anchor="w", stretch=(name == "Подразделение"))
+        tree.column(str(i), width=w, minwidth=R(40), anchor="w", stretch=(name == "Подразделение"))
     tvs = scrollbar(prev_in, "vertical", tree.yview, C["card"])
     ths = scrollbar(prev_in, "horizontal", tree.xview, C["card"])
     tree.configure(yscrollcommand=tvs.set, xscrollcommand=ths.set)
@@ -751,7 +786,7 @@ def run_gui(initial_file=None, on_ready=None):
         for w in (prev_box, warn_box, empty_lbl):
             w.pack_forget()
         if last_res["res"] is None:
-            empty_lbl.pack(fill="both", expand=True, pady=R(30))
+            empty_lbl.pack(fill="both", expand=True, pady=RV(30))
         elif name == "prev":
             prev_box.pack(fill="both", expand=True)
         else:
