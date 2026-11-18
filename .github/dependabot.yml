@@ -1,0 +1,22 @@
+# Раз в месяц Dependabot предлагает обновления экшенов и Python-зависимостей отдельными pull request.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore
+    groups:
+      python:
+        patterns: ["*"]

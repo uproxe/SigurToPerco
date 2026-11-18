@@ -36,8 +36,14 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: python -m pip install -r requirements.txt pytest
-      - run: python -m pytest -q
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Линтер
+        run: python -m ruff check --output-format=github .
+      - name: Тесты
+        run: python -m pytest
+      - name: Тег совпадает с версией в коде и CHANGELOG
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: python scripts/release_notes.py "${GITHUB_REF_NAME#v}" --check
 
   # ------------------------------------------------------------------ проверка окна
   # Запускает настоящее окно, прокликивает вкладки и сохраняет скриншоты
@@ -218,8 +224,14 @@ jobs:
           pattern: SigurPerco-*
           merge-multiple: true
       - run: ls -la release
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Описание релиза из CHANGELOG
+        run: python scripts/release_notes.py "${GITHUB_REF_NAME#v}" > release-body.md
       - uses: softprops/action-gh-release@v2
         with:
+          name: Sigur → PERCo ${{ github.ref_name }}
+          body_path: release-body.md
           files: release/*
-          body_path: .github/release-notes.md
-          generate_release_notes: true
+          fail_on_unmatched_files: true
