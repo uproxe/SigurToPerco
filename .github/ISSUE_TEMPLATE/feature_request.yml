@@ -1,0 +1,20 @@
+name: Предложение
+description: Идея новой возможности или улучшения
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую задачу нужно решить
+      description: Что сейчас неудобно или чего не хватает
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Как это могло бы выглядеть
+  - type: textarea
+    id: context
+    attributes:
+      label: Дополнительно
+      description: Примеры формата файлов, номеров, скриншоты (без персональных данных)
