@@ -152,22 +152,22 @@ Workflow [`.github/workflows/build.yml`](.github/workflows/build.yml):
 
 - **push в `main`** или **Actions → Build → Run workflow** — линтер, тесты, проверка окна и сборки под все системы;
   файлы — в разделе *Artifacts* на странице запуска;
-- **push тега `vX.Y.Z`** — то же самое плюс **Release** со всеми файлами и описанием из `CHANGELOG.md`;
+- **ручной запуск с галочкой «Выпустить релиз»** или **push тега `vX.Y.Z`** — то же самое плюс **Release**
+  со всеми файлами и описанием из `CHANGELOG.md`;
 - **pull request** — линтер, тесты и проверка окна.
 
 Проверка окна запускает программу на виртуальном экране и сохраняет скриншоты в артефакты `ui-screenshots-*`.
 
 ### Выпуск версии
 
-Поменять `__version__` в `sigur_perco/__init__.py`, описать изменения в `CHANGELOG.md`, затем:
+1. Поменять `__version__` в `sigur_perco/__init__.py` и описать изменения в `CHANGELOG.md`, закоммитить в `main`.
+2. Выпустить релиз — любым способом:
+   - **Actions → Build → Run workflow → отметить «Выпустить релиз»** (удобно и с телефона) —
+     тег `vX.Y.Z` создаст сам GitHub;
+   - или тегом из командной строки: `git tag -a v0.4.0 -m "Sigur → PERCo 0.4.0" && git push origin v0.4.0`.
 
-```bash
-git tag -a v0.4.0 -m "Sigur → PERCo 0.4.0"
-git push origin main v0.4.0
-```
-
-Подробнее — в [CONTRIBUTING.md](CONTRIBUTING.md). Сборка остановится, если тег не совпадает с версией в коде
-или в CHANGELOG нет раздела для неё.
+Сборка остановится, если версия в коде не совпадает с тегом, тег уже существует или в CHANGELOG нет раздела
+для этой версии. Подробнее — в [CONTRIBUTING.md](CONTRIBUTING.md).
 
 > Репозиторий приватный: минуты macOS в бесплатном лимите GitHub считаются ×10, Windows ×2.
 > Чтобы не тратить их на каждый push, уберите `branches: [main, master]` из `on.push` — сборки останутся на теги и ручной запуск.

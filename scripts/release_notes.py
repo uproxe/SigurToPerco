@@ -3,6 +3,8 @@
 
     python scripts/release_notes.py 0.3.0            # описание релиза -> stdout
     python scripts/release_notes.py 0.3.0 --check    # проверить, что версия готова к выпуску
+    python scripts/release_notes.py --check          # то же для версии из sigur_perco/__init__.py
+    python scripts/release_notes.py --print-version  # версия из sigur_perco/__init__.py
 
 --check завершается с ошибкой, если версия в sigur_perco/__init__.py не совпадает
 с указанной или в CHANGELOG.md нет раздела для неё.
@@ -41,10 +43,14 @@ def main():
             pass
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("version", help="версия без «v», например 0.3.0")
+    ap.add_argument("version", nargs="?", help="версия без «v», например 0.3.0 (по умолчанию - из кода)")
     ap.add_argument("--check", action="store_true", help="только проверить готовность к выпуску")
+    ap.add_argument("--print-version", action="store_true", help="напечатать версию из кода и выйти")
     args = ap.parse_args()
-    version = args.version.lstrip("v")
+    if args.print_version:
+        print(code_version())
+        return 0
+    version = (args.version or code_version()).lstrip("v")
 
     section = changelog_section(version)
     problems = []

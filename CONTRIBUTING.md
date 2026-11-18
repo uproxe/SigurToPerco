@@ -42,14 +42,16 @@ python scripts/screenshots.py       # окно «вживую», снимки в
 1. Поменять `__version__` в `sigur_perco/__init__.py`.
 2. В `CHANGELOG.md` перенести пункты из «Не выпущено» в новый раздел `## [X.Y.Z] - ГГГГ-ММ-ДД`
    и добавить ссылку на версию внизу файла.
-3. Закоммитить и поставить тег:
+3. Закоммитить в `main` и выпустить релиз — любым способом:
+   - **Actions → Build → Run workflow**, отметить «Выпустить релиз» — тег `vX.Y.Z` создаст GitHub;
+   - или тегом:
 
-   ```bash
-   git tag -a vX.Y.Z -m "Sigur → PERCo X.Y.Z"
-   git push origin main vX.Y.Z
-   ```
+     ```bash
+     git tag -a vX.Y.Z -m "Sigur → PERCo X.Y.Z"
+     git push origin vX.Y.Z
+     ```
 
-GitHub Actions проверит, что тег совпадает с версией в коде и что в CHANGELOG есть раздел,
+GitHub Actions проверит, что версия в коде совпадает с тегом, такого тега ещё нет и в CHANGELOG есть раздел,
 соберёт программу под все системы и опубликует Release с описанием из CHANGELOG.
 
 ## Важно: персональные данные

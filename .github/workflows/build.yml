@@ -2,7 +2,10 @@
 #
 #  - каждый push в main и ручной запуск (Actions -> Build -> Run workflow):
 #      тесты, проверка окна со скриншотами, сборки; готовые файлы - в «Artifacts»;
-#  - push тега v* (например v0.4.0): то же самое + GitHub Release с файлами;
+#  - выпуск релиза - любым из двух способов:
+#      * Actions -> Build -> Run workflow -> отметить «Выпустить релиз»
+#        (тег vX.Y.Z по версии из sigur_perco/__init__.py создаст сам GitHub);
+#      * push тега vX.Y.Z (например v0.4.0);
 #  - pull request: тесты и проверка окна.
 
 name: Build
@@ -13,6 +16,11 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      release:
+        description: "Выпустить релиз (тег vX.Y.Z по версии из sigur_perco/__init__.py)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -22,9 +30,10 @@ env:
   PYTHONUTF8: "1"
   PYTHONIOENCODING: "utf-8"
 
+# Новый push отменяет устаревшую сборку той же ветки, но релизные запуски не прерываются
 concurrency:
-  group: build-${{ github.ref }}
-  cancel-in-progress: true
+  group: build-${{ github.ref }}${{ inputs.release && '-release' || '' }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') && !inputs.release }}
 
 jobs:
   # ------------------------------------------------------------------ тесты логики
@@ -41,9 +50,20 @@ jobs:
         run: python -m ruff check --output-format=github .
       - name: Тесты
         run: python -m pytest
-      - name: Тег совпадает с версией в коде и CHANGELOG
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: python scripts/release_notes.py "${GITHUB_REF_NAME#v}" --check
+      - name: Версия готова к выпуску
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            python scripts/release_notes.py "${GITHUB_REF_NAME#v}" --check
+          else
+            v="$(python scripts/release_notes.py --print-version)"
+            if [[ -n "$(git ls-remote --tags origin "refs/tags/v$v")" ]]; then
+              echo "::error::Тег v$v уже есть. Поднимите __version__ в sigur_perco/__init__.py и опишите версию в CHANGELOG.md."
+              exit 1
+            fi
+            python scripts/release_notes.py "$v" --check
+          fi
 
   # ------------------------------------------------------------------ проверка окна
   # Запускает настоящее окно, прокликивает вкладки и сохраняет скриншоты
@@ -212,7 +232,7 @@ jobs:
   release:
     name: GitHub Release
     needs: [ui, windows, linux, macos]
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -227,11 +247,18 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - name: Описание релиза из CHANGELOG
-        run: python scripts/release_notes.py "${GITHUB_REF_NAME#v}" > release-body.md
+      - name: Версия и описание релиза из CHANGELOG
+        id: ver
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then v="${GITHUB_REF_NAME#v}"; else v="$(python scripts/release_notes.py --print-version)"; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          python scripts/release_notes.py "$v" > release-body.md
       - uses: softprops/action-gh-release@v3
         with:
-          name: Sigur → PERCo ${{ github.ref_name }}
+          tag_name: v${{ steps.ver.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Sigur → PERCo v${{ steps.ver.outputs.version }}
           body_path: release-body.md
           files: release/*
           fail_on_unmatched_files: true
