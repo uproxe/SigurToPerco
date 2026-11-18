@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sigur-perco"
+dynamic = ["version", "dependencies"]
+description = "Sigur → PERCo: пересчёт номеров пропусков и подготовка выгрузки сотрудников для импорта в PERCo-Web"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+# Пакет ставится на Python 3.9+. Сам код совместим и с 3.8 - на нём собирается версия для Windows 7.
+requires-python = ">=3.9"
+authors = [{ name = "SigurPerco contributors" }]
+keywords = ["sigur", "perco", "access control", "skud", "wiegand", "converter", "tkinter"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Win32 (MS Windows)",
+    "Environment :: X11 Applications",
+    "Environment :: MacOS X",
+    "Intended Audience :: System Administrators",
+    "Natural Language :: Russian",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Office/Business",
+    "Topic :: Utilities",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.16,<0.17", "pyinstaller>=6.10", "pillow>=10"]
+
+[project.scripts]
+sigur-perco = "sigur_perco.__main__:run"
+
+[project.urls]
+Homepage = "https://github.com/uproxe/SigurToPerco"
+Releases = "https://github.com/uproxe/SigurToPerco/releases"
+Issues = "https://github.com/uproxe/SigurToPerco/issues"
+Changelog = "https://github.com/uproxe/SigurToPerco/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+packages = ["sigur_perco"]
+
+[tool.setuptools.dynamic]
+version = { attr = "sigur_perco.__version__" }
+dependencies = { file = ["requirements.txt"] }
+
+# ---------------------------------------------------------------- тесты
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+# ---------------------------------------------------------------- линтер
+[tool.ruff]
+target-version = "py38"      # код должен оставаться совместимым с Python 3.8 (сборка для Windows 7)
+line-length = 120
+extend-exclude = ["build", "dist", "release"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "SIM", "PL"]
+ignore = [
+    "PLR0911", "PLR0912", "PLR0913", "PLR0914", "PLR0915", "PLR0917",  # длинные функции окна - осознанно
+    "PLR2004",                                                          # «магические» числа в разметке окна
+    "PLC0415",                                                          # ленивые импорты ускоряют запуск
+    "PLW0603",
+    "SIM105", "SIM108",
+    "UP031", "UP032",                                                   # %-форматирование оставлено как есть
+]
