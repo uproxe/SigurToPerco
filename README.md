@@ -5,11 +5,25 @@
 <h1 align="center">Sigur → PERCo</h1>
 
 <p align="center">
-  Пересчёт номеров пропусков из Sigur в формат PERCo и подготовка выгрузки сотрудников для импорта в PERCo-Web.<br>
-  Windows · Linux · macOS
+  Пересчёт номеров пропусков из Sigur в формат PERCo и подготовка выгрузки сотрудников для импорта в PERCo-Web.
 </p>
 
----
+<p align="center">
+  <a href="https://github.com/uproxe/SigurToPerco/actions/workflows/build.yml"><img src="https://github.com/uproxe/SigurToPerco/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-0D9488" alt="Windows | Linux | macOS">
+  <img src="https://img.shields.io/badge/python-3.8%2B-0D9488" alt="Python 3.8+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0D9488" alt="MIT"></a>
+</p>
+
+<p align="center"><sub>
+  <b>English:</b> a desktop tool that converts Sigur access card numbers (W58 HEX) to PERCo “series/number”
+  format and turns a Sigur employee export into a PERCo-Web import table. Windows, Linux, macOS.
+</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/card.png" width="49%" alt="Вкладка «Номер пропуска»">
+  <img src="docs/screenshots/export.png" width="49%" alt="Вкладка «Выгрузка из Sigur»">
+</p>
 
 ## Возможности
 
@@ -27,7 +41,7 @@
 
 ## Скачать
 
-Готовые сборки — на странице **[Releases](../../releases)**:
+Готовые сборки — на странице **[Releases](https://github.com/uproxe/SigurToPerco/releases/latest)**:
 
 | Система | Файл |
 |---|---|
@@ -76,26 +90,30 @@ PERCo:   18/52532
 
 ```
 sigur_perco/
-  core.py        ← вся логика: пересчёт номеров, чтение выгрузки, запись файла PERCo
-  gui.py         ← окно программы (tkinter)
-  widgets.py     ← современные элементы: скруглённые кнопки и поля, тонкий скроллбар, переключатели
-  __main__.py    ← запуск: окно или командная строка
-  __init__.py    ← версия программы
-run.py           ← точка входа (python run.py) и для PyInstaller
-tests/           ← тесты (pytest) и генератор вымышленной выгрузки
-examples/        ← пример выгрузки Sigur с вымышленными данными
-assets/          ← значки (ico / icns / png)
+  core.py          ← вся логика: пересчёт номеров, чтение выгрузки, запись файла PERCo
+  gui.py           ← окно программы (tkinter)
+  widgets.py       ← современные элементы: скруглённые кнопки и поля, тонкий скроллбар, переключатели
+  __main__.py      ← запуск: окно или командная строка
+  __init__.py      ← версия программы
+run.py             ← точка входа (python run.py) и для PyInstaller
+tests/             ← тесты (pytest) и генератор вымышленной выгрузки
+examples/          ← пример выгрузки Sigur с вымышленными данными
+assets/            ← значки (ico / icns / png)
+docs/screenshots/  ← скриншоты для README
 scripts/
-  build.py       ← сборка под текущую систему: exe / deb / dmg
-  make_icons.py  ← перерисовать значок
-  make_sample.py ← пересоздать пример выгрузки
-  screenshots.py ← запустить окно, прокликать вкладки и сохранить скриншоты
-packaging/linux/ ← ярлык и описание .deb-пакета
-.github/workflows/build.yml ← сборка на GitHub под все системы
+  build.py         ← сборка под текущую систему: exe / deb / dmg
+  screenshots.py   ← запустить окно, прокликать вкладки и сохранить скриншоты
+  release_notes.py ← описание релиза из CHANGELOG и проверка версии перед выпуском
+  make_icons.py    ← перерисовать значок
+  make_sample.py   ← пересоздать пример выгрузки
+packaging/linux/   ← ярлык и описание .deb-пакета
+pyproject.toml     ← описание пакета, настройки pytest и ruff
+.github/           ← сборка в GitHub Actions, Dependabot, шаблоны issue и pull request
 ```
 
 Настройки конвертации (срок «не ограничен», ФИО заглавными, какие типы записей переносить, шаблон доступа)
-— константы в начале [`sigur_perco/core.py`](sigur_perco/core.py).
+— константы в начале [`sigur_perco/core.py`](sigur_perco/core.py). Цвета интерфейса — словарь `C` в начале
+[`sigur_perco/gui.py`](sigur_perco/gui.py).
 
 ### Запуск из исходников
 
@@ -107,17 +125,16 @@ python run.py --card 000000AB12CD34              # → 18/52532
 python run.py --cli выгрузка.xls -o userPERCO.xlsx
 ```
 
-На Linux для окна нужен tkinter: `sudo apt install python3-tk`.
+На Linux для окна нужен tkinter: `sudo apt install python3-tk`. Можно и поставить как пакет:
+`pip install .` — появится команда `sigur-perco`.
 
-### Тесты
+### Проверки
 
 ```bash
-python -m pytest -q                 # логика: пересчёт номеров, чтение и запись файлов
+python -m ruff check .              # стиль и типичные ошибки
+python -m pytest                    # логика: пересчёт номеров, чтение и запись файлов
 python scripts/screenshots.py       # окно «вживую»: прокликивает вкладки, снимки в screenshots/
 ```
-
-Интерфейс нарисован средствами самого tkinter, без сторонних библиотек: скругления — это картинки PNG,
-которые `widgets.py` генерирует со сглаживанием при запуске. Цвета — словарь `C` в начале `gui.py`.
 
 ### Сборка у себя
 
@@ -127,30 +144,32 @@ python scripts/screenshots.py       # окно «вживую»: проклик�
 | Linux | `./build.sh` | `.deb` и `.tar.gz` |
 | macOS | `./build.sh` | `.dmg` |
 
-PyInstaller собирает только под ту систему, на которой запущен, — поэтому все три версии сразу делает GitHub Actions.
+PyInstaller собирает только под ту систему, на которой запущен, — поэтому все версии сразу делает GitHub Actions.
 
-### Сборка на GitHub
+### GitHub Actions
 
 Workflow [`.github/workflows/build.yml`](.github/workflows/build.yml):
 
-- **push в `main`** или **Actions → Build → Run workflow** — тесты, проверка окна и сборки под все системы;
+- **push в `main`** или **Actions → Build → Run workflow** — линтер, тесты, проверка окна и сборки под все системы;
   файлы — в разделе *Artifacts* на странице запуска;
-- **push тега `v*`** — то же самое плюс **Release** со всеми файлами;
-- **pull request** — тесты и проверка окна.
+- **push тега `vX.Y.Z`** — то же самое плюс **Release** со всеми файлами и описанием из `CHANGELOG.md`;
+- **pull request** — линтер, тесты и проверка окна.
 
-Проверка окна (`Интерфейс (linux / windows)`) запускает программу на виртуальном экране и сохраняет
-скриншоты в артефакты `ui-screenshots-*` — так видно, как выглядит интерфейс после каждого изменения.
+Проверка окна запускает программу на виртуальном экране и сохраняет скриншоты в артефакты `ui-screenshots-*`.
 
-Выпустить новую версию:
+### Выпуск версии
+
+Поменять `__version__` в `sigur_perco/__init__.py`, описать изменения в `CHANGELOG.md`, затем:
 
 ```bash
-git tag v0.4.0
-git push origin v0.4.0
+git tag -a v0.4.0 -m "Sigur → PERCo 0.4.0"
+git push origin main v0.4.0
 ```
 
-Номер версии из тега сам попадёт в программу, в свойства `.exe`, в `.deb` и `.dmg`.
+Подробнее — в [CONTRIBUTING.md](CONTRIBUTING.md). Сборка остановится, если тег не совпадает с версией в коде
+или в CHANGELOG нет раздела для неё.
 
-> Если репозиторий приватный: минуты macOS в бесплатном лимите GitHub считаются ×10, Windows ×2.
+> Репозиторий приватный: минуты macOS в бесплатном лимите GitHub считаются ×10, Windows ×2.
 > Чтобы не тратить их на каждый push, уберите `branches: [main, master]` из `on.push` — сборки останутся на теги и ручной запуск.
 
 ---
